@@ -1,0 +1,30 @@
+#!/bin/sh
+# Copy to /usr/bin/isp_demon
+# Function to wait for /mnt/sd/update_traccar.sh
+wait_for_gps_script() {
+    echo "Waiting for /mnt/sd/update_traccar.sh to become available..."
+    TIMEOUT=300  # 5 minutes in seconds
+    WAIT_INTERVAL=5  # Check every 5 seconds
+    ELAPSED=0
+
+    while [ ! -f /mnt/sd/update_traccar.sh ]; do
+        sleep "$WAIT_INTERVAL"
+        ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+        echo "DEBUG: Checked for /mnt/sd/update_traccar.sh (elapsed: $ELAPSED seconds)"
+
+        if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+            echo "ERROR: /mnt/sd/update_traccar.sh not found within 5 minutes. Exiting."
+            exit 1
+        fi
+    done
+
+    echo "/mnt/sd/update_traccar.sh found. Starting GPS update process..."
+    /mnt/sd/update_traccar.sh &
+}
+
+# Kill existing update_traccar.sh processes
+echo "Ensuring no duplicate GPS update processes..."
+killall -q update_traccar.sh 2>/dev/null || true
+
+# Wait for /mnt/sd/update_traccar.sh to be available, then start it
+wait_for_gps_script &
