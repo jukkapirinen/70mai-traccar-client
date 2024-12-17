@@ -83,7 +83,7 @@ EOF
     SPEED_KNOTS=$(printf "%d.%02d" $((SPEED * 1944 / 100000 )) $((SPEED * 1944 / 1000 % 100)))
 
     # Send data to Traccar
-    wget -qO- --timeout=30 "http://$SERVER:$PORT/?id=$DEVICE_ID&lat=$LATITUDE&lon=$LONGITUDE&speed=$SPEED_KNOTS&bearing=$ORIENTATION_DEG&valid=1&timestamp=$TIMESTAMP_ADJUSTED" >/dev/null
+    wget -qO- -T 30 "http://$SERVER:$PORT/?id=$DEVICE_ID&lat=$LATITUDE&lon=$LONGITUDE&speed=$SPEED_KNOTS&bearing=$ORIENTATION_DEG&valid=1&timestamp=$TIMESTAMP_ADJUSTED" >/dev/null
 
     # Log the update
     echo "Data sent: ID=$DEVICE_ID, LAT=$LATITUDE, LON=$LONGITUDE, TIME=$TIMESTAMP_ADJUSTED, SPEED=$SPEED_KNOTS knots, ORIENTATION=$ORIENTATION_DEG, ACCX=$ACCX, ACCY=$ACCY, ACCZ=$ACCZ"
