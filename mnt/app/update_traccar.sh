@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Load settings
-SETTINGS_FILE="/mnt/sd/traccar_settings.conf"
+SETTINGS_FILE="/mnt/app/traccar_settings.conf"
 if [ ! -f "$SETTINGS_FILE" ]; then
     echo "ERROR: Settings file not found at $SETTINGS_FILE. Exiting."
     exit 1
