@@ -1,32 +1,42 @@
 #!/bin/sh
 # Copy to /usr/bin/isp_demon
 
-# Function to wait for /mnt/sd/update_traccar.sh
+# Function to wait for /mnt/sd/GPSData000001.txt
 wait_for_gps_script() {
-    echo "Waiting for /mnt/sd/update_traccar.sh to become available..."
+    echo "Waiting for /mnt/sd/GPSData000001.txt to become available..."
     TIMEOUT=300  # 5 minutes in seconds
     WAIT_INTERVAL=5  # Check every 5 seconds
     ELAPSED=0
 
-    while [ ! -f /mnt/sd/update_traccar.sh ]; do
+    while [ ! -f /mnt/sd/GPSData000001.txt ]; do
         sleep "$WAIT_INTERVAL"
         ELAPSED=$((ELAPSED + WAIT_INTERVAL))
-        # echo "DEBUG: Checked for /mnt/sd/update_traccar.sh (elapsed: $ELAPSED seconds)"
-
+        # echo "DEBUG: Checked for /mnt/sd/GPSData000001.txt (elapsed: $ELAPSED seconds)"
         if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-            echo "ERROR: /mnt/sd/update_traccar.sh not found within 5 minutes. Exiting."
+            echo "ERROR: /mnt/sd/GPSData000001.txt not found within 5 minutes. Exiting."
             exit 1
         fi
     done
 
-    echo "/mnt/sd/update_traccar.sh found. Starting GPS update process..."
-    /mnt/sd/update_traccar.sh &
+    echo "/mnt/sd/GPSData000001.txt found. Starting GPS update process..."
+    if [ -f /mnt/app/update_traccar.sh ]; then
+        /mnt/app/update_traccar.sh &
+    else
+        echo "ERROR: /mnt/app/update_traccar.sh not found. Aborting GPS update."
+        exit 1
+    fi
 }
 
-# Function to add crontab entry if missing
+# Function to add crontab entry if /mnt/app/gettime.sh exists
 ensure_crontab_entry() {
-    CRON_ENTRY="25,50 * * * * /usr/bin/gettime.sh"
+    CRON_ENTRY="25,50 * * * * /mnt/app/gettime.sh"
     CRON_FILE="/var/spool/cron/crontabs/root"
+
+    # Check if the script exists
+    if [ ! -f /mnt/app/gettime.sh ]; then
+        echo "INFO: /mnt/app/gettime.sh not found. Skipping crontab entry."
+        return
+    fi
 
     # Check if crontab file exists
     if [ ! -f "$CRON_FILE" ]; then
@@ -36,10 +46,10 @@ ensure_crontab_entry() {
     else
         # Check if the crontab entry already exists
         if ! grep -Fxq "$CRON_ENTRY" "$CRON_FILE"; then
-            echo "Adding crontab entry for /usr/bin/gettime.sh..."
+            echo "Adding crontab entry for /mnt/app/gettime.sh..."
             echo "$CRON_ENTRY" >> "$CRON_FILE"
         else
-            echo "Crontab entry for /usr/bin/gettime.sh already exists."
+            echo "Crontab entry for /mnt/app/gettime.sh already exists."
         fi
     fi
 }
@@ -48,8 +58,8 @@ ensure_crontab_entry() {
 echo "Ensuring no duplicate GPS update processes..."
 killall -q update_traccar.sh 2>/dev/null || true
 
-# Ensure crontab entry exists
+# Ensure crontab entry exists 
 ensure_crontab_entry
 
-# Wait for /mnt/sd/update_traccar.sh to be available, then start it
+# Wait for /mnt/sd/GPSData000001.txt to be available, then start it
 wait_for_gps_script &
