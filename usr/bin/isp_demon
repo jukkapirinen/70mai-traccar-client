@@ -19,47 +19,17 @@ wait_for_gps_script() {
     done
 
     echo "/mnt/sd/GPSData000001.txt found. Starting GPS update process..."
-    if [ -f /mnt/app/update_traccar.sh ]; then
-        /mnt/app/update_traccar.sh &
+    if [ -f /usr/bin/traccar_client.sh ]; then
+        /usr/bin/traccar_client.sh &
     else
-        echo "ERROR: /mnt/app/update_traccar.sh not found. Aborting GPS update."
+        echo "ERROR: /usr/bin/traccar_client.sh not found. Aborting GPS update."
         exit 1
     fi
 }
 
-# Function to add crontab entry if /mnt/app/gettime.sh exists
-ensure_crontab_entry() {
-    CRON_ENTRY="25,50 * * * * /mnt/app/gettime.sh"
-    CRON_FILE="/var/spool/cron/crontabs/root"
-
-    # Check if the script exists
-    if [ ! -f /mnt/app/gettime.sh ]; then
-        echo "INFO: /mnt/app/gettime.sh not found. Skipping crontab entry."
-        return
-    fi
-
-    # Check if crontab file exists
-    if [ ! -f "$CRON_FILE" ]; then
-        echo "Creating new crontab file for root..."
-        echo "$CRON_ENTRY" > "$CRON_FILE"
-        chmod 600 "$CRON_FILE"
-    else
-        # Check if the crontab entry already exists
-        if ! grep -Fxq "$CRON_ENTRY" "$CRON_FILE"; then
-            echo "Adding crontab entry for /mnt/app/gettime.sh..."
-            echo "$CRON_ENTRY" >> "$CRON_FILE"
-        else
-            echo "Crontab entry for /mnt/app/gettime.sh already exists."
-        fi
-    fi
-}
-
-# Kill existing update_traccar.sh processes
+# Kill existing traccar_client.sh processes
 echo "Ensuring no duplicate GPS update processes..."
-killall -q update_traccar.sh 2>/dev/null || true
-
-# Ensure crontab entry exists 
-ensure_crontab_entry
+killall -q traccar_client.sh 2>/dev/null || true
 
 # Wait for /mnt/sd/GPSData000001.txt to be available, then start it
 wait_for_gps_script &

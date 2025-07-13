@@ -1,10 +1,16 @@
-#!/bin/sh
+!/bin/sh
 
 # Load settings
-SETTINGS_FILE="/mnt/app/traccar_settings.conf"
+SETTINGS_FILE="/mnt/other/traccar_settings.conf"
+
 if [ ! -f "$SETTINGS_FILE" ]; then
-    echo "ERROR: Settings file not found at $SETTINGS_FILE. Exiting."
-    exit 1
+    if [ -f /mnt/sd/traccar_settings.conf ]; then
+        echo "Settings file not found in /mnt/other. Copying from /mnt/sd..."
+        cp /mnt/sd/traccar_settings.conf "$SETTINGS_FILE"
+    else
+        echo "ERROR: Settings file not found at $SETTINGS_FILE or /mnt/sd/traccar_settings.conf. Exiting."
+        exit 1
+    fi
 fi
 
 . "$SETTINGS_FILE"
@@ -28,7 +34,7 @@ sum_acc_y=0
 sum_acc_z=0
 
 LAST_TIMESTAMP=""
-
+NETERRCOUNT=0
 while true; do
     LATEST_LINE=$(tail -n 1 "$GPS_FILE")
     log_debug "LATEST_LINE=$LATEST_LINE"
@@ -136,7 +142,20 @@ EOF
     wget -qO- -T 30 \
       "http://$SERVER:$PORT/?id=$DEVICE_ID&lat=$LATITUDE&lon=$LONGITUDE&speed=$SPEED_KNOTS&bearing=$ORIENTATION_DEG&valid=1&timestamp=$TIMESTAMP_ADJUSTED" \
       >/dev/null
-
+    if [ $? -ne 0 ]; then
+      NETERRCOUNT=$((NETERRCOUNT + 1))
+      echo "Wget failed for $NETERRCOUNT times"
+      if [ $NETERRCOUNT -gt $MAXNETERRCOUNT ]; then
+        echo "Restarting network" 
+        echo -n "1-1" > /sys/bus/usb/drivers/usb/unbind
+        sleep 10
+        echo -n "1-1" > /sys/bus/usb/drivers/usb/bind
+        NETERRCOUNT=0
+      fi
+    else
+      # Last wget was ok, we can reset errcount
+      NETERRCOUNT=0
+    fi
     log_debug "Data sent => ID=$DEVICE_ID, LAT=$LATITUDE, LON=$LONGITUDE, TIME=$TIMESTAMP_ADJUSTED, SPEED=$SPEED_KNOTS, ORIENT=$ORIENTATION_DEG"
 
     LAST_TIMESTAMP=$TIMESTAMP
