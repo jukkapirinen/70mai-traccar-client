@@ -1,11 +1,13 @@
 !/bin/sh
 
 # Load settings
-SETTINGS_FILE="/mnt/other/traccar_settings.conf"
+SETTINGS_FILE="/mnt/other/traccar/traccar_settings.conf"
 
 if [ ! -f "$SETTINGS_FILE" ]; then
     if [ -f /mnt/sd/traccar_settings.conf ]; then
         echo "Settings file not found in /mnt/other. Copying from /mnt/sd..."
+	# Ensure the destination directory exists before copying
+        mkdir -p "/mnt/other/traccar"
         cp /mnt/sd/traccar_settings.conf "$SETTINGS_FILE"
     else
         echo "ERROR: Settings file not found at $SETTINGS_FILE or /mnt/sd/traccar_settings.conf. Exiting."
